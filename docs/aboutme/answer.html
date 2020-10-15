@@ -1,0 +1,47 @@
+#!/usr/bin/python3
+
+import sys
+import re
+import operator
+import csv
+
+err_dict = {} #error dictionary
+user_dict = {} #user dictionary
+with open('syslog.log', 'r') as file:
+    log = file.readlines()
+    n = 0
+    for line in log:
+        pure_line = line.strip()
+        find_error = re.search(r'ticky: ERROR (.*) \(', pure_line)
+        find_user = re.search(r'[A-Z]{4}.*\((.*)\)', pure_line)
+        if find_error != None: # section for err_dict
+            if find_error[1] not in err_dict:
+                err_dict[find_error[1].strip()] = 0
+            err_dict[find_error[1].strip()] += 1
+        if find_user != None:
+            info_type = re.search(r'ticky: (\w*) ', pure_line)
+            if find_user[1] not in user_dict:
+                user_dict[find_user[1]] = [0, 0]
+            if info_type[1] == 'INFO':
+                user_dict[find_user[1]][0] += 1
+            elif info_type[1] == 'ERROR':
+                user_dict[find_user[1]][1] += 1
+
+    file.close()
+
+err_dict = sorted(err_dict.items(), key = operator.itemgetter(1), reverse=True)
+user_dict = sorted(user_dict.items())
+flat_user_dict = [(usr, c[0], c[1]) for usr, c in user_dict]
+
+
+with open('error_message.csv','w') as out:
+    csv_out=csv.writer(out)
+    csv_out.writerow(["Error", "Count"])
+    csv_out.writerows(err_dict)
+    file.close()
+
+with open('user_statistics.csv','w') as out:
+    csv_out=csv.writer(out)
+    csv_out.writerow(["Username", "INFO", "ERROR"])
+    csv_out.writerows(flat_user_dict)
+    file.close()
